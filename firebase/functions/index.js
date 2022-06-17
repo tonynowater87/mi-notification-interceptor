@@ -2,7 +2,7 @@ const functions = require("firebase-functions");
 
 const admin = require("firebase-admin");
 admin.initializeApp();
-
+const database = admin.firestore();
 
 // LINE MESSAGE API
 const express = require('express');
@@ -14,59 +14,76 @@ const config = {
   channelSecret: '1c341e3a44292a75526f8debb520153a'
 };
 
-const client = new line.Client(config);
+const lineClient = new line.Client(config);
 line.middleware(config);
 
 const app = express();
 app.post('/webhook', line.middleware(config), (req, res) => {
+  functions.logger.log("LineMessageAPI webhook request", req);
+  functions.logger.log("LineMessageAPI webhook response", res);
   Promise
     .all(req.body.events.map(handleEvent))
     .then((result) => res.json(result));
 });
 
-function handleEvent(event) {
+async function handleEvent(event) {
   functions.logger.log("LineMessageAPI webhook event", event);
+
+  if (event.type == 'join') {
+    const writeResult = await database
+      .collection('groups')
+      .add({ group: event.source.groupId });
+    functions.logger.log(`webhook join event, added data ${writeResult.id}`);
+    return Promise.resolve(null);
+  }
+
+  if (event.type == 'leave') {
+    const groupRef = database.collection('groups').where('group', '==', event.source.groupId);
+    groupRef.get().then(function (querySnapshot) {
+      querySnapshot.forEach(function (doc) {
+        functions.logger.log(`webhook leave event, remove data ${doc.ref}`);
+        doc.ref.delete();
+      });
+    })
+    return Promise.resolve(null);
+  }
 
   if (event.type !== 'message' || event.message.type !== 'text') {
     return Promise.resolve(null);
   }
 
-  return client.replyMessage(event.replyToken, {
+  return lineClient.replyMessage(event.replyToken, {
     type: 'text',
     text: event.message.text
   });
 }
 
-// start listen line chat webhook event
-app.listen(5576);
+app.get('/', (req, res) => {
+  const date = new Date();
+  const hours = (date.getHours() % 12) + 1;  // London is UTC + 1hr;
+  res.send(`
+    <!doctype html>
+    <head>
+      <title>Time</title>
+      <link rel="stylesheet" href="/style.css">
+      <script src="/script.js"></script>
+    </head>
+    <body>
+      <p>In London, the clock strikes:
+        <span id="bongs">${'BONG '.repeat(hours)}</span></p>
+      <button onClick="refresh(this)">Refresh</button>
+    </body>
+  </html>`);
+});
 
-// Send push message
-//const message = {
-//  type: 'text',
-//  text: 'Hello World!'
-//};
-//
-//client.pushMessage('<to>', message)
-//  .then(() => {
-//
-//  })
-//  .catch((err) => {
-//    // error handling
-//  });
-// exports.sendPushMessage = functions.https.onRequest(())
-
-//exports.LineMessageAPI = functions.https.onRequest((request, response) => {
-//  functions.logger.log("LineMessageAPI request", request);
-//  functions.logger.log("LineMessageAPI response", response);
-//});
+exports.app = functions.https.onRequest(app);
 
 
 // // Create and Deploy Your First Cloud Functions
 // // https://firebase.google.com/docs/functions/write-firebase-functions
 //
 exports.helloWorld = functions.https.onRequest((request, response) => {
-  functions.logger.info("Hello logs!", { structuredData: true });
-  response.send("Hello from Firebase!!!");
+  response.send("Hello from Firebase!");
 });
 
 // Take the text parameter passed to this HTTP endpoint and insert it into
@@ -75,7 +92,7 @@ exports.addMessage = functions.https.onRequest(async (req, res) => {
   // Grab the text parameter.
   const original = req.query.text;
   // Push the new message into Firestore using the Firebase Admin SDK.
-  const writeResult = await admin.firestore().collection('messages').add({ original: original });
+  const writeResult = await database.collection('messages').add({ original: original });
   // Send back a message that we've successfully written the message
   res.json({ result: `Message with ID: ${writeResult.id} added.` });
 });
