@@ -5,6 +5,7 @@ import android.os.IBinder
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
+import com.google.firebase.functions.FirebaseFunctions
 import com.tonynowater.mi_notification_intercepter.ui.model.InterceptNotificationItem
 
 class MiInterceptorService : NotificationListenerService() {
@@ -15,8 +16,11 @@ class MiInterceptorService : NotificationListenerService() {
         val KEY_NOTIFICATION = "com.tonynowater.key_notification_interceptor"
     }
 
+    private lateinit var firebaseFunctions: FirebaseFunctions
+
     override fun onCreate() {
         super.onCreate()
+        firebaseFunctions = FirebaseFunctions.getInstance()
         Log.d(TAG, "onCreate")
     }
 
@@ -47,6 +51,57 @@ class MiInterceptorService : NotificationListenerService() {
 
         if (sbn.packageName == "com.xiaomi.smarthome") {
             // TODO save to local db
+            when {
+                text?.contains("開啟") == true -> {
+                    firebaseFunctions.getHttpsCallable("pushMessage")
+                        .call(
+                            mapOf(
+                                "type" to "OpenRoomDoor",
+                                "timestamp" to System.currentTimeMillis()
+                            )
+                        )
+                        .addOnSuccessListener {
+                            Log.d(TAG, "pushed OpenRoomDoor")
+                        }
+                        .addOnFailureListener {
+                            Log.d(TAG, "pushed OpenRoomDoor failed $it")
+                        }
+                }
+                text?.contains("關閉") == true -> {
+                    firebaseFunctions.getHttpsCallable("pushMessage")
+                        .call(
+                            mapOf(
+                                "type" to "CloseRoomDoor",
+                                "timestamp" to System.currentTimeMillis()
+                            )
+                        )
+                        .addOnSuccessListener {
+                            Log.d(TAG, "pushed CloseRoomDoor")
+                        }
+                        .addOnFailureListener {
+                            Log.d(TAG, "pushed CloseRoomDoor failed $it")
+                        }
+                }
+                text?.contains("逾時") == true -> {
+                    // TODO
+                }
+                text?.contains("移動") == true -> {
+                    firebaseFunctions.getHttpsCallable("pushMessage")
+                        .call(
+                            mapOf(
+                                "type" to "UpDownStairs",
+                                "timestamp" to System.currentTimeMillis()
+                            )
+                        )
+                        .addOnSuccessListener {
+                            Log.d(TAG, "pushed UpDownStairs")
+                        }
+                        .addOnFailureListener {
+                            Log.d(TAG, "pushed UpDownStairs failed $it")
+                        }
+                }
+            }
+
             Log.d(TAG, "onXiaoMiNotificationPosted: $title $text")
         }
         sendBroadcast(Intent(ACTION_NOTIFICATION).apply {
