@@ -2,7 +2,6 @@ const functions = require("firebase-functions");
 
 const admin = require("firebase-admin");
 admin.initializeApp();
-const database = admin.firestore();
 
 // LINE MESSAGE API
 const express = require('express');
@@ -30,15 +29,13 @@ async function handleEvent(event) {
   functions.logger.log("LineMessageAPI webhook event", event);
 
   if (event.type == 'join') {
-    const writeResult = await database
-      .collection('groups')
-      .add({ group: event.source.groupId });
+    const writeResult = await admin.firestore().collection('groups').add({ group: event.source.groupId });
     functions.logger.log(`webhook join event, added data ${writeResult.id}`);
     return Promise.resolve(null);
   }
 
   if (event.type == 'leave') {
-    const groupRef = database.collection('groups').where('group', '==', event.source.groupId);
+    const groupRef = await admin.firestore().collection('groups').where('group', '==', event.source.groupId);
     groupRef.get().then(function (querySnapshot) {
       querySnapshot.forEach(function (doc) {
         functions.logger.log(`webhook leave event, remove data ${doc.ref}`);
@@ -58,24 +55,65 @@ async function handleEvent(event) {
   });
 }
 
-app.get('/', (req, res) => {
-  const date = new Date();
-  const hours = (date.getHours() % 12) + 1;  // London is UTC + 1hr;
-  res.send(`
-    <!doctype html>
-    <head>
-      <title>Time</title>
-      <link rel="stylesheet" href="/style.css">
-      <script src="/script.js"></script>
-    </head>
-    <body>
-      <p>In London, the clock strikes:
-        <span id="bongs">${'BONG '.repeat(hours)}</span></p>
-      <button onClick="refresh(this)">Refresh</button>
-    </body>
-  </html>`);
+exports.pushMessage = functions.https.onRequest(async (req, res) => {
+  const type = req.query.type;
+  const timestamp = req.query.timestamp;
+
+  functions.logger.log(`message query = ${type}, ${timestamp}`);
+
+  const writeResult = await admin.firestore().collection('events').add({ type: type, timestamp: timestamp });
+
+  functions.logger.log(`write event result = ${writeResult.id}`);
+
+  const groupRef = await admin.firestore().collection('groups');
+
+  var message;
+
+  switch (type) {
+    case 'OpenRoomDoor':
+      console.log('阿嬤開啟房門')
+      message = {
+        type: 'text',
+        text: '阿嬤開啟房門'
+      };
+      break;
+    case 'CloseRoomDoor':
+      console.log('阿嬤關閉房門')
+      message = {
+        type: 'text',
+        text: '阿嬤關閉房門'
+      };
+      break;
+    case 'UpDownStairs':
+      console.log('偵測阿嬤從三樓走下二樓')
+      message = {
+        type: 'text',
+        text: '阿嬤疑似半夜從三樓走下二樓'
+      };
+      break;
+    default:
+      console.log('TODO')
+  }
+
+  groupRef.get().then(function (querySnapshot) {
+    querySnapshot.forEach(function (doc) {
+      var groupId = doc.data().group;
+      functions.logger.log(`push message, doc.data = ${groupId}`);
+      lineClient.pushMessage(groupId, message)
+        .then(() => {
+          functions.logger.log(`pushed message to groupId = ${groupId}`);
+        })
+        .finally(() => {
+          res.json({ result: `Pushed Message Successfully` });
+        })
+        .catch((err) => {
+          functions.logger.log(`pushed message error ${err}, groupId = ${groupId}`);
+        });
+    });
+  })
 });
 
+// exports express middleware
 exports.app = functions.https.onRequest(app);
 
 
@@ -83,7 +121,7 @@ exports.app = functions.https.onRequest(app);
 // // https://firebase.google.com/docs/functions/write-firebase-functions
 //
 exports.helloWorld = functions.https.onRequest((request, response) => {
-  response.send("Hello from Firebase!");
+  response.send("Hello from Firebase!!!!!");
 });
 
 // Take the text parameter passed to this HTTP endpoint and insert it into
@@ -92,7 +130,7 @@ exports.addMessage = functions.https.onRequest(async (req, res) => {
   // Grab the text parameter.
   const original = req.query.text;
   // Push the new message into Firestore using the Firebase Admin SDK.
-  const writeResult = await database.collection('messages').add({ original: original });
+  const writeResult = await admin.firestore().collection('messages').add({ original: original });
   // Send back a message that we've successfully written the message
   res.json({ result: `Message with ID: ${writeResult.id} added.` });
 });
