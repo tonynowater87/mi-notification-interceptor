@@ -22,7 +22,7 @@ app.post('/webhook', line.middleware(config), (req, res) => {
   functions.logger.log("LineMessageAPI webhook response", res);
   Promise
     .all(req.body.events.map(handleEvent))
-    .then((result) => res.json(result));
+    .then((result) => res.status(200).json(result));
 });
 
 async function handleEvent(event) {
@@ -56,8 +56,10 @@ async function handleEvent(event) {
 }
 
 exports.pushMessage = functions.https.onRequest(async (req, res) => {
-  const type = req.query.type;
-  const timestamp = req.query.timestamp;
+  functions.logger.log('reg.body', req.body);
+  
+  const type = req.body.data.type;
+  const timestamp = req.body.data.timestamp;
 
   functions.logger.log(`message query = ${type}, ${timestamp}`);
 
@@ -102,12 +104,11 @@ exports.pushMessage = functions.https.onRequest(async (req, res) => {
       lineClient.pushMessage(groupId, message)
         .then(() => {
           functions.logger.log(`pushed message to groupId = ${groupId}`);
-        })
-        .finally(() => {
-          res.json({ result: `Pushed Message Successfully` });
+          res.status(200).json({ result: `Pushed Message Successfully` });
         })
         .catch((err) => {
           functions.logger.log(`pushed message error ${err}, groupId = ${groupId}`);
+          res.status(500).json({ result: `Pushed Message Failed` });
         });
     });
   })
@@ -121,18 +122,19 @@ exports.app = functions.https.onRequest(app);
 // // https://firebase.google.com/docs/functions/write-firebase-functions
 //
 exports.helloWorld = functions.https.onRequest((request, response) => {
-  response.send("Hello from Firebase!!!!!");
+  response.status(200).send({ data: "Hello from Firebase!!!!!" });
 });
 
 // Take the text parameter passed to this HTTP endpoint and insert it into
 // Firestore under the path /messages/:documentId/original
 exports.addMessage = functions.https.onRequest(async (req, res) => {
-  // Grab the text parameter.
-  const original = req.query.text;
+  functions.logger.log('reg.body', req.body);
+  //const body = JSON.parse(req.body);
+  const original = req.body.data.text;
   // Push the new message into Firestore using the Firebase Admin SDK.
   const writeResult = await admin.firestore().collection('messages').add({ original: original });
   // Send back a message that we've successfully written the message
-  res.json({ result: `Message with ID: ${writeResult.id} added.` });
+  res.status(200).json({ result: `Message with ID: ${writeResult.id} added.` });
 });
 
 // Listens for new messages added to /messages/:documentId/original and creates an

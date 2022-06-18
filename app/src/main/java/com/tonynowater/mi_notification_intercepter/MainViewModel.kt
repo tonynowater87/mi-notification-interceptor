@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.getSystemService
 import androidx.lifecycle.AndroidViewModel
+import com.google.firebase.functions.FirebaseFunctions
 import com.tonynowater.mi_notification_intercepter.ui.model.InterceptNotificationItem
 
 class MainViewModel(private val app: Application) : AndroidViewModel(app) {
@@ -66,6 +67,34 @@ class MainViewModel(private val app: Application) : AndroidViewModel(app) {
         notificationItems = notificationItems.toMutableList().apply {
             this.add(0, item)
         }
+    }
+
+    fun sendTestFirebaseCloudFunction() {
+        val instance = FirebaseFunctions.getInstance()
+        instance.useEmulator("10.0.2.2", 5580)
+        instance
+            //.getHttpsCallable("helloWorld")
+            //.call()
+            /*.getHttpsCallable("addMessage")
+            .call(mapOf("text" to "XDD"))*/
+            .getHttpsCallable("pushMessage")
+            .call(
+                mapOf(
+                    "type" to "UpDownStairs",
+                    "timestamp" to System.currentTimeMillis()
+                )
+            )
+            .addOnSuccessListener {
+                Log.d(TAG, "pushed CloseRoomDoor")
+            }
+            .addOnFailureListener {
+                Log.d(TAG, "pushed CloseRoomDoor failed $it")
+            }
+            .continueWith { task ->
+                val result = task.result?.data as String
+                Log.d(TAG, "pushed CloseRoomDoor success $result")
+                result
+            }
     }
 
     companion object {

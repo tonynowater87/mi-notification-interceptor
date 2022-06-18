@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.Button
 import androidx.compose.material.Divider
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Switch
@@ -46,10 +47,10 @@ fun MainScaffold(
         Column {
             MainView(
                 notificationPermissionGrantedState = notificationPermissionGrantedState,
-                serviceRunningState = switchState
-            ) {
-                viewModel!!.switchChanged(it)
-            }
+                serviceRunningState = switchState,
+                onCheckedChange = { viewModel!!.switchChanged(it) },
+                onClickTestButton = { viewModel!!.sendTestFirebaseCloudFunction() }
+            )
 
             Divider(modifier = Modifier.fillMaxWidth())
 
@@ -63,7 +64,8 @@ fun MainScaffold(
 fun MainView(
     notificationPermissionGrantedState: Boolean,
     serviceRunningState: Boolean,
-    onCheckedChange: (boolean: Boolean) -> Unit
+    onCheckedChange: (boolean: Boolean) -> Unit,
+    onClickTestButton: (() -> Unit)? = null
 ) {
 
     val context = LocalContext.current //
@@ -94,6 +96,11 @@ fun MainView(
                 onCheckedChange = onCheckedChange
             )
         }
+        Spacer(modifier = Modifier.size(10.dp))
+        Button(onClick = { onClickTestButton?.invoke() }) {
+            Text(text = "發送測試CloudFunction")
+        }
+
     }
 }
 
