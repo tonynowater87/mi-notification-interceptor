@@ -57,11 +57,12 @@ async function handleEvent(event) {
 
 exports.pushMessage = functions.https.onRequest(async (req, res) => {
   functions.logger.log('reg.body', req.body);
-  
+
   const type = req.body.data.type;
-  const timestamp = req.body.data.timestamp;
 
   functions.logger.log(`message query = ${type}, ${timestamp}`);
+
+  var timestamp = admin.firestore.FieldValue.serverTimestamp()
 
   const writeResult = await admin.firestore().collection('events').add({ type: type, timestamp: timestamp });
 
@@ -76,21 +77,21 @@ exports.pushMessage = functions.https.onRequest(async (req, res) => {
       console.log('阿嬤開啟房門')
       message = {
         type: 'text',
-        text: '阿嬤開啟房門'
+        text: '阿嬤房門開啟'
       };
       break;
     case 'CloseRoomDoor':
       console.log('阿嬤關閉房門')
       message = {
         type: 'text',
-        text: '阿嬤關閉房門'
+        text: '阿嬤房門關閉'
       };
       break;
     case 'UpDownStairs':
       console.log('偵測阿嬤從三樓走下二樓')
       message = {
         type: 'text',
-        text: '阿嬤疑似半夜從三樓走下二樓'
+        text: '阿嬤疑似於睡覺時間(00:00～06:30)從三樓走下二樓'
       };
       break;
     default:

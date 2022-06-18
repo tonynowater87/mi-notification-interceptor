@@ -6,6 +6,9 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
 import com.google.firebase.functions.FirebaseFunctions
+import com.tonynowater.mi_notification_intercepter.data.CloudFunctionRepository
+import com.tonynowater.mi_notification_intercepter.data.CloudFunctionRepositoryImpl
+import com.tonynowater.mi_notification_intercepter.ui.model.AlertType
 import com.tonynowater.mi_notification_intercepter.ui.model.InterceptNotificationItem
 
 class MiInterceptorService : NotificationListenerService() {
@@ -16,11 +19,11 @@ class MiInterceptorService : NotificationListenerService() {
         val KEY_NOTIFICATION = "com.tonynowater.key_notification_interceptor"
     }
 
-    private lateinit var firebaseFunctions: FirebaseFunctions
+    private lateinit var cloudFunctionRepository: CloudFunctionRepository
 
     override fun onCreate() {
         super.onCreate()
-        firebaseFunctions = FirebaseFunctions.getInstance()
+        cloudFunctionRepository = CloudFunctionRepositoryImpl(FirebaseFunctions.getInstance())
         Log.d(TAG, "onCreate")
     }
 
@@ -46,59 +49,23 @@ class MiInterceptorService : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         super.onNotificationPosted(sbn)
 
-        val title = sbn.notification.extras.getString("android.title")
-        val text = sbn.notification.extras.getString("android.text")
+        val title = sbn.notification.extras.getString("android.title") // 有人移動-向手機發送通知
+        val text = sbn.notification.extras.getString("android.text") // 智慧通知
 
         if (sbn.packageName == "com.xiaomi.smarthome") {
             // TODO save to local db
             when {
-                text?.contains("開啟") == true -> {
-                    firebaseFunctions.getHttpsCallable("pushMessage")
-                        .call(
-                            mapOf(
-                                "type" to "OpenRoomDoor",
-                                "timestamp" to System.currentTimeMillis()
-                            )
-                        )
-                        .addOnSuccessListener {
-                            Log.d(TAG, "pushed OpenRoomDoor")
-                        }
-                        .addOnFailureListener {
-                            Log.d(TAG, "pushed OpenRoomDoor failed $it")
-                        }
+                title?.contains("開啟") == true -> {
+                    cloudFunctionRepository.pushMessage(AlertType.OpenRoomDoor)
                 }
-                text?.contains("關閉") == true -> {
-                    firebaseFunctions.getHttpsCallable("pushMessage")
-                        .call(
-                            mapOf(
-                                "type" to "CloseRoomDoor",
-                                "timestamp" to System.currentTimeMillis()
-                            )
-                        )
-                        .addOnSuccessListener {
-                            Log.d(TAG, "pushed CloseRoomDoor")
-                        }
-                        .addOnFailureListener {
-                            Log.d(TAG, "pushed CloseRoomDoor failed $it")
-                        }
+                title?.contains("關閉") == true -> {
+                    cloudFunctionRepository.pushMessage(AlertType.CloseRoomDoor)
                 }
-                text?.contains("逾時") == true -> {
+                title?.contains("逾時") == true -> {
                     // TODO
                 }
-                text?.contains("移動") == true -> {
-                    firebaseFunctions.getHttpsCallable("pushMessage")
-                        .call(
-                            mapOf(
-                                "type" to "UpDownStairs",
-                                "timestamp" to System.currentTimeMillis()
-                            )
-                        )
-                        .addOnSuccessListener {
-                            Log.d(TAG, "pushed UpDownStairs")
-                        }
-                        .addOnFailureListener {
-                            Log.d(TAG, "pushed UpDownStairs failed $it")
-                        }
+                title?.contains("移動") == true -> {
+                    cloudFunctionRepository.pushMessage(AlertType.UpDownStairs)
                 }
             }
 

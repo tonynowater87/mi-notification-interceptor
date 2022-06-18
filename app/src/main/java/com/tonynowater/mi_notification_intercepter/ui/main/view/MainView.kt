@@ -48,8 +48,7 @@ fun MainScaffold(
             MainView(
                 notificationPermissionGrantedState = notificationPermissionGrantedState,
                 serviceRunningState = switchState,
-                onCheckedChange = { viewModel!!.switchChanged(it) },
-                onClickTestButton = { viewModel!!.sendTestFirebaseCloudFunction() }
+                onCheckedChange = { viewModel!!.switchChanged(it) }
             )
 
             Divider(modifier = Modifier.fillMaxWidth())
@@ -98,9 +97,8 @@ fun MainView(
         }
         Spacer(modifier = Modifier.size(10.dp))
         Button(onClick = { onClickTestButton?.invoke() }) {
-            Text(text = "發送測試CloudFunction")
-        }
 
+        }
     }
 }
 
