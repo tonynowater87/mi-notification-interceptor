@@ -3,14 +3,17 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 admin.initializeApp();
 
+// Config env file variables
+require('dotenv').config()
+
 // LINE MESSAGE API
 const express = require('express');
 const line = require('@line/bot-sdk');
 
 // Config
 const config = {
-  channelAccessToken: 'aPz8G/EYUWSaZFjA3K2aNF1F+TL2iJR8aY10QOZFjU1FxzrSt87koCBIIB5J8+AlEXXUZOnpfZ7IB7ZvSYouX0b724I93iMxXeIRTtSlzFJ+pn87J6wVJ+Br8K6L4x7tfilud4SM8fe5pgfYEqmdwQdB04t89/1O/w1cDnyilFU=',
-  channelSecret: '1c341e3a44292a75526f8debb520153a'
+  channelAccessToken: process.env.LINEBOT_CHANNEL_ACCESS_TOKEN,
+  channelSecret: process.env.LINEBOT_CHANNEL_SECRET
 };
 
 const lineClient = new line.Client(config);
