@@ -1,4 +1,4 @@
-package com.tonynowater.mi_notification_intercepter
+package com.tonynowater.mi_notification_intercepter.ui.main
 
 import android.app.ActivityManager
 import android.app.Application
@@ -10,7 +10,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.getSystemService
 import androidx.lifecycle.AndroidViewModel
-import com.tonynowater.mi_notification_intercepter.ui.model.InterceptNotificationItem
+import androidx.lifecycle.viewModelScope
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.functions.FirebaseFunctions
+import com.tonynowater.mi_notification_intercepter.MiInterceptorService
+import com.tonynowater.mi_notification_intercepter.data.CloudFunctionRepository
+import com.tonynowater.mi_notification_intercepter.data.CloudFunctionRepositoryImpl
+import com.tonynowater.mi_notification_intercepter.ui.model.EventModel
+import kotlinx.coroutines.launch
 
 class MainViewModel(private val app: Application) : AndroidViewModel(app) {
 
@@ -21,8 +28,13 @@ class MainViewModel(private val app: Application) : AndroidViewModel(app) {
     var switchState by mutableStateOf(false)
         private set
 
-    var notificationItems: MutableList<InterceptNotificationItem> by mutableStateOf(mutableListOf())
+    var events: List<EventModel> by mutableStateOf(listOf())
         private set
+
+    private var repository: CloudFunctionRepository = CloudFunctionRepositoryImpl(
+        FirebaseFunctions.getInstance(),
+        FirebaseFirestore.getInstance()
+    )
 
     init {
         // check needed permission
@@ -62,9 +74,11 @@ class MainViewModel(private val app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun receiveNotificationItem(item: InterceptNotificationItem) {
-        notificationItems = notificationItems.toMutableList().apply {
-            this.add(0, item)
+    fun pullMessage() {
+        viewModelScope.launch {
+            val result = repository.pullAllTypeEvents().await()
+            Log.d(TAG, "getEventResult: $result")
+            events = result.toList()
         }
     }
 

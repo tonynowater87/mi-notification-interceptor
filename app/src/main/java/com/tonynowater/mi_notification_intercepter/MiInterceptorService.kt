@@ -5,25 +5,26 @@ import android.os.IBinder
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.functions.FirebaseFunctions
 import com.tonynowater.mi_notification_intercepter.data.CloudFunctionRepository
 import com.tonynowater.mi_notification_intercepter.data.CloudFunctionRepositoryImpl
 import com.tonynowater.mi_notification_intercepter.ui.model.AlertType
-import com.tonynowater.mi_notification_intercepter.ui.model.InterceptNotificationItem
 
 class MiInterceptorService : NotificationListenerService() {
 
     companion object {
         private val TAG = MiInterceptorService::class.simpleName
-        val ACTION_NOTIFICATION = "com.tonynowater.action_notification_interceptor"
-        val KEY_NOTIFICATION = "com.tonynowater.key_notification_interceptor"
     }
 
     private lateinit var cloudFunctionRepository: CloudFunctionRepository
 
     override fun onCreate() {
         super.onCreate()
-        cloudFunctionRepository = CloudFunctionRepositoryImpl(FirebaseFunctions.getInstance())
+        cloudFunctionRepository = CloudFunctionRepositoryImpl(
+            firebaseFunctions = FirebaseFunctions.getInstance(),
+            firebaseFirestore = FirebaseFirestore.getInstance()
+        )
         Log.d(TAG, "onCreate")
     }
 
@@ -53,7 +54,7 @@ class MiInterceptorService : NotificationListenerService() {
         val text = sbn.notification.extras.getString("android.text") // 智慧通知
 
         if (sbn.packageName == "com.xiaomi.smarthome") {
-            // TODO save to local db
+            // TODO save to local db?
             when {
                 title?.contains("開啟") == true -> {
                     cloudFunctionRepository.pushMessage(AlertType.OpenRoomDoor)
@@ -71,15 +72,6 @@ class MiInterceptorService : NotificationListenerService() {
 
             Log.d(TAG, "onXiaoMiNotificationPosted: $title $text")
         }
-        sendBroadcast(Intent(ACTION_NOTIFICATION).apply {
-            putExtra(
-                KEY_NOTIFICATION, InterceptNotificationItem(
-                    title = title ?: "無標題",
-                    text = text ?: "無內容",
-                    time = sbn.postTime
-                )
-            )
-        })
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification, rankingMap: RankingMap) {

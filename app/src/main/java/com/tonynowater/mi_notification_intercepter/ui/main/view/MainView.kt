@@ -24,17 +24,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.tonynowater.mi_notification_intercepter.MainViewModel
-import com.tonynowater.mi_notification_intercepter.ui.model.InterceptNotificationItem
+import com.google.firebase.Timestamp
+import com.tonynowater.mi_notification_intercepter.ui.main.MainViewModel
+import com.tonynowater.mi_notification_intercepter.ui.model.AlertType
+import com.tonynowater.mi_notification_intercepter.ui.model.EventModel
 import java.text.DateFormat
-import java.time.Instant
-import java.util.Date
 
 @Composable
 fun MainScaffold(
     switchState: Boolean,
     notificationPermissionGrantedState: Boolean,
-    items: List<InterceptNotificationItem>,
     viewModel: MainViewModel? = null
 ) {
 
@@ -48,12 +47,15 @@ fun MainScaffold(
             MainView(
                 notificationPermissionGrantedState = notificationPermissionGrantedState,
                 serviceRunningState = switchState,
-                onCheckedChange = { viewModel!!.switchChanged(it) }
+                onCheckedChange = { viewModel!!.switchChanged(it) },
+                onClickTestButton = {
+                    viewModel!!.pullMessage()
+                }
             )
 
             Divider(modifier = Modifier.fillMaxWidth())
 
-            NotificationList(data = items)
+            NotificationList(data = viewModel!!.events)
         }
     }
 }
@@ -97,16 +99,15 @@ fun MainView(
         }
         Spacer(modifier = Modifier.size(10.dp))
         Button(onClick = { onClickTestButton?.invoke() }) {
-
         }
     }
 }
 
 @Composable
-fun NotificationList(data: List<InterceptNotificationItem>) {
+fun NotificationList(data: List<EventModel>) {
     // TODO animation . . .
 
-    Text(modifier = Modifier.padding(5.dp), text = "攔截到的通知訊息列表", fontWeight = FontWeight.Bold)
+    Text(modifier = Modifier.padding(5.dp), text = "阿嬤動態偵測列表", fontWeight = FontWeight.Bold)
 
     LazyColumn(
         modifier = Modifier
@@ -116,10 +117,10 @@ fun NotificationList(data: List<InterceptNotificationItem>) {
             Column {
                 Text(
                     text = DateFormat.getDateTimeInstance()
-                        .format(Date.from(Instant.ofEpochMilli(item.time))),
+                        .format(item.timestamp.toDate()),
                 )
                 Text(
-                    text = "標題：${item.title}\n內文：${item.text}",
+                    text = item.type.name,
                     maxLines = 5,
                 )
             }
@@ -131,22 +132,21 @@ fun NotificationList(data: List<InterceptNotificationItem>) {
 @Composable
 fun DefaultPreview() {
     MainScaffold(
-        notificationPermissionGrantedState = true, switchState = false, items = listOf(
-            InterceptNotificationItem(
-                title = "Title",
-                text = "Content",
-                time = System.currentTimeMillis()
-            ),
-            InterceptNotificationItem(
-                title = "Title",
-                text = "Content",
-                time = System.currentTimeMillis()
-            ),
-            InterceptNotificationItem(
-                title = "Title",
-                text = "Content",
-                time = System.currentTimeMillis()
+        notificationPermissionGrantedState = true, switchState = false
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun NotificationListPreview() {
+    Column {
+        NotificationList(
+            data = listOf(
+                EventModel(
+                    type = AlertType.OpenRoomDoor,
+                    timestamp = Timestamp.now()
+                )
             )
         )
-    )
+    }
 }
