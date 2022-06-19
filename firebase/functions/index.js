@@ -49,10 +49,7 @@ async function handleEvent(event) {
     return Promise.resolve(null);
   }
 
-  return lineClient.replyMessage(event.replyToken, {
-    type: 'text',
-    text: event.message.text
-  });
+  return Promise.resolve(null);
 }
 
 exports.pushMessage = functions.https.onRequest(async (req, res) => {
