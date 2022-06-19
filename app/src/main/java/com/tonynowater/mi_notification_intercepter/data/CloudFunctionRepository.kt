@@ -6,5 +6,5 @@ import kotlinx.coroutines.Deferred
 
 interface CloudFunctionRepository {
     fun pushMessage(alertType: AlertType)
-    suspend fun pullAllTypeEvents(): Deferred<List<EventModel>>
+    suspend fun pullAllTypeEvents(): List<EventModel>
 }

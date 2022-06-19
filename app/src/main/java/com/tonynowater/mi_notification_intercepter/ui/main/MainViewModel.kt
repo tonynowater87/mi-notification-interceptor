@@ -76,7 +76,7 @@ class MainViewModel(private val app: Application) : AndroidViewModel(app) {
 
     fun pullMessage() {
         viewModelScope.launch {
-            val result = repository.pullAllTypeEvents().await()
+            val result = repository.pullAllTypeEvents()
             Log.d(TAG, "getEventResult: $result")
             events = result.toList()
         }
