@@ -9,10 +9,10 @@
   },
   "emulators": {
     "functions": {
-      "port": 5582
+      "port": 5584
     },
     "firestore": {
-      "port": 5583
+      "port": 5585
     },
     "ui": {
       "enabled": true
