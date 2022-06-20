@@ -12,12 +12,12 @@ class MainApp : Application() {
         if (BuildConfig.DEBUG) {
             FirebaseFirestore.setLoggingEnabled(true)
             FirebaseFirestore.getInstance().apply {
-                useEmulator("10.0.2.2", 5583)
+                useEmulator("10.0.2.2", 5585)
                 firestoreSettings = FirebaseFirestoreSettings.Builder().apply {
                     isPersistenceEnabled = false
                 }.build()
             }
-            FirebaseFunctions.getInstance().useEmulator("10.0.2.2", 5582)
+            FirebaseFunctions.getInstance().useEmulator("10.0.2.2", 5584)
         }
     }
 

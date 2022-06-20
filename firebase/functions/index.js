@@ -100,10 +100,10 @@ exports.pushMessage = functions.https.onRequest(async (req, res) => {
       };
       break;    
     case 'RoomDoorNotClosed':
-      console.log('阿嬤房門逾時未關，風扇關閉')
+      console.log('阿嬤房門逾時未關')
       message = {
         type: 'text',
-        text: '阿嬤房門逾時未關，關閉電風扇'
+        text: '阿嬤房門逾時未關'
       };
       break;
     default:
@@ -112,10 +112,10 @@ exports.pushMessage = functions.https.onRequest(async (req, res) => {
 
   lineNotify.notify(process.env.LINE_NOTIFY_TOKEN, message.text).then((body) => {
     functions.logger.log(body);
-    response.status(200).json({ status: 200, message: 'ok' });
+    res.status(200).json({ status: 200, message: 'ok' });
   }).catch((e) => {
     functions.logger.log(e);
-    response.status(500).json({ message: e });
+    res.status(500).json({ message: e });
   });
 
   // send message by group id

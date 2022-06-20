@@ -99,6 +99,7 @@ fun MainView(
         }
         Spacer(modifier = Modifier.size(10.dp))
         Button(onClick = { onClickTestButton?.invoke() }) {
+            Text(text = "測試按鈕")
         }
     }
 }

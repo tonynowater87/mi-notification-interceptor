@@ -54,16 +54,15 @@ class MiInterceptorService : NotificationListenerService() {
         val text = sbn.notification.extras.getString("android.text") // 智慧通知
 
         if (sbn.packageName == "com.xiaomi.smarthome") {
-            // TODO save to local db?
             when {
+                text?.contains("逾時") == true || title?.contains("逾時") == true -> {
+                    cloudFunctionRepository.pushMessage(AlertType.RoomDoorNotClosed)
+                }
                 title?.contains("開啟") == true -> {
                     cloudFunctionRepository.pushMessage(AlertType.OpenRoomDoor)
                 }
                 title?.contains("關閉") == true -> {
                     cloudFunctionRepository.pushMessage(AlertType.CloseRoomDoor)
-                }
-                title?.contains("逾時") == true -> {
-                    // TODO
                 }
                 title?.contains("移動") == true -> {
                     cloudFunctionRepository.pushMessage(AlertType.UpDownStairs)
