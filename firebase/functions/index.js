@@ -26,8 +26,6 @@ line.middleware(config);
 const app = express();
 
 app.post('/webhook', line.middleware(config), (req, res) => {
-  functions.logger.log("LineMessageAPI webhook request", req);
-  functions.logger.log("LineMessageAPI webhook response", res);
   Promise
     .all(req.body.events.map(handleEvent))
     .then((result) => res.status(200).json(result));
@@ -61,19 +59,15 @@ async function handleEvent(event) {
 }
 
 exports.pushMessage = functions.https.onRequest(async (req, res) => {
-  functions.logger.log('pushMessage reg.body', req.body);
+  functions.logger.log('pushMessage reguest.body', req.body);
 
   const type = req.body.data.type;
-
-  functions.logger.log(`message body = ${type}, ${timestamp}`);
 
   var timestamp = admin.firestore.FieldValue.serverTimestamp()
 
   const writeResult = await admin.firestore().collection('events').add({ type: type, timestamp: timestamp });
 
   functions.logger.log(`write event result = ${writeResult.id}`);
-
-  const groupRef = await admin.firestore().collection('groups');
 
   var message;
 
@@ -111,14 +105,15 @@ exports.pushMessage = functions.https.onRequest(async (req, res) => {
   }
 
   lineNotify.notify(process.env.LINE_NOTIFY_TOKEN, message.text).then((body) => {
-    functions.logger.log(body);
-    res.status(200).json({ status: 200, message: 'ok' });
+    functions.logger.log('lineNotify success', body);
+    res.status(200).json({ data: 'ok' });
   }).catch((e) => {
-    functions.logger.log(e);
-    res.status(500).json({ message: e });
+    functions.logger.log('lineNotify error', e);
+    res.status(500).json({ data: '${e}' });
   });
 
   // send message by group id
+  // const groupRef = await admin.firestore().collection('groups');
   /* groupRef.get().then(function (querySnapshot) {
     querySnapshot.forEach(function (doc) {
       var groupId = doc.data().group;
@@ -152,10 +147,10 @@ exports.notifySticker = functions.https.onRequest((request, response) => {
   // Send a message with sticker
   // https://developers.line.biz/en/docs/messaging-api/sticker-list/#specify-sticker-in-message-object
   lineNotify.notify(process.env.LINE_NOTIFY_TOKEN, '出門嘍', '', '', 446, 1988).then((body) => {
-    functions.logger.log(body);
-    response.status(200).json({ status: 200, message: 'ok' });
+    functions.logger.log('lineNotify success', body);
+    response.status(200).json({ data: 'ok' });
   }).catch((e) => {
-    functions.logger.log(e);
-    response.status(500).json({ message: e });
+    functions.logger.log('lineNotify error', e);
+    response.status(500).json({ data: e });
   });
 });
