@@ -59,7 +59,7 @@ async function handleEvent(event) {
 }
 
 exports.pushMessage = functions.https.onRequest(async (req, res) => {
-  functions.logger.log('pushMessage reguest.body', req.body);
+  functions.logger.log('pushMessage request.body', req.body);
 
   const type = req.body.data.type;
 

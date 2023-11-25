@@ -6,7 +6,6 @@ import com.google.firebase.firestore.Query
 import com.google.firebase.functions.FirebaseFunctions
 import com.tonynowater.mi_notification_intercepter.ui.model.AlertType
 import com.tonynowater.mi_notification_intercepter.ui.model.EventModel
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
@@ -19,15 +18,34 @@ class CloudFunctionRepositoryImpl(
 ) :
     CloudFunctionRepository {
 
+    private val messageQueue: ArrayDeque<AlertType> = ArrayDeque(0)
+    private var isPushingMessage = false
+
     override fun pushMessage(alertType: AlertType) {
-        firebaseFunctions.getHttpsCallable("pushMessage")
-            .call(mapOf("type" to alertType.toString()))
-            .addOnSuccessListener {
-                Log.d(TAG, "pushMessage Result: ${it.data}")
-            }
-            .addOnFailureListener {
-                Log.d(TAG, "pushMessage Error: $it")
-            }
+        if (!isPushingMessage) {
+            isPushingMessage = true
+            firebaseFunctions.getHttpsCallable("pushMessage")
+                .call(mapOf("type" to alertType.toString()))
+                .addOnSuccessListener {
+                    Log.d(TAG, "pushMessage Result: ${it.data}, $alertType")
+                    isPushingMessage = false
+                    checkPendingMessages()
+                }
+                .addOnFailureListener {
+                    Log.d(TAG, "pushMessage Error: $it, $alertType")
+                    isPushingMessage = false
+                    checkPendingMessages()
+                }
+        } else {
+            Log.d(TAG, "pushMessage add to queue: $alertType")
+            messageQueue.addLast(alertType)
+        }
+    }
+
+    private fun checkPendingMessages() {
+        if (messageQueue.isNotEmpty()) {
+            pushMessage(messageQueue.removeFirst())
+        }
     }
 
     override suspend fun pullAllTypeEvents(): List<EventModel> {
