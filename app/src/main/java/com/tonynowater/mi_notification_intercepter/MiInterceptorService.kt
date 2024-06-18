@@ -50,26 +50,29 @@ class MiInterceptorService : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         super.onNotificationPosted(sbn)
 
-        val title = sbn.notification.extras.getString("android.title") // 有人移動-向手機發送通知
-        val text = sbn.notification.extras.getString("android.text") // 智慧通知
+        val title = sbn.notification.extras.getString("android.title") // 智慧通知
+        val text = sbn.notification.extras.getString("android.text") // 有人移動-向手機發送通知
 
+        Log.d(TAG, "onNotificationPosted: $title, $text, packageName: ${sbn.packageName}")
         if (sbn.packageName == "com.xiaomi.smarthome") {
             when {
-                text?.contains("逾時") == true || title?.contains("逾時") == true -> {
+                // 智慧通知, 阿嬤房間-房門逾時未關
+                // 19:14 逾時未關閉, 【阿嬤房門-門窗感應器】
+                title?.contains("逾時") == true || text?.contains("逾時") == true -> {
                     cloudFunctionRepository.pushMessage(AlertType.RoomDoorNotClosed)
                 }
-                title?.contains("開啟") == true -> {
+                text?.contains("開啟") == true -> {
                     cloudFunctionRepository.pushMessage(AlertType.OpenRoomDoor)
                 }
-                title?.contains("關閉") == true -> {
+                text?.contains("關閉") == true -> {
                     cloudFunctionRepository.pushMessage(AlertType.CloseRoomDoor)
                 }
-                title?.contains("移動") == true -> {
+                text?.contains("移動") == true -> {
                     cloudFunctionRepository.pushMessage(AlertType.UpDownStairs)
                 }
             }
 
-            Log.d(TAG, "onXiaoMiNotificationPosted: $title $text")
+            Log.d(TAG, "onXiaoMiNotificationPosted: $title, $text")
         }
     }
 
